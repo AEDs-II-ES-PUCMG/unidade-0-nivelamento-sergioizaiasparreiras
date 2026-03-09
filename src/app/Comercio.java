@@ -58,8 +58,28 @@ public class Comercio {
      * @return Um vetor com os produtos carregados, ou vazio em caso de problemas de leitura.
      */
     static Produto[] lerProdutos(String nomeArquivoDados) {
-        Produto[] vetorProdutos;
-        //TO DO
+        Produto[] vetorProdutos = new Produto[MAX_NOVOS_PRODUTOS];
+        quantosProdutos = 0;
+
+        try (Scanner leitorArquivo = new Scanner(new File(nomeArquivoDados), Charset.forName("ISO-8859-2"))) {
+            if (leitorArquivo.hasNextLine()) {
+                int qtdArquivo = Integer.parseInt(leitorArquivo.nextLine().trim());
+                vetorProdutos = new Produto[qtdArquivo + MAX_NOVOS_PRODUTOS];
+
+                while (leitorArquivo.hasNextLine() && quantosProdutos < qtdArquivo) {
+                    String linha = leitorArquivo.nextLine();
+                    if (!linha.isBlank()) {
+                        vetorProdutos[quantosProdutos] = Produto.criarDoTexto(linha);
+                        quantosProdutos++;
+                    }
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Arquivo de dados não encontrado. Iniciando sistema com vetor vazio.");
+        } catch (Exception e) {
+            System.out.println("Erro ao ler dados: " + e.getMessage());
+        }
+
         return vetorProdutos;
     }
 
@@ -74,10 +94,31 @@ public class Comercio {
     }
 
     /** Localiza um produto no vetor de cadastrados, a partir do nome, e imprime seus dados. 
-     *  A busca não é sensível ao caso.  Em caso de não encontrar o produto, imprime mensagem padrão */
+     * A busca não é sensível ao caso.  Em caso de não encontrar o produto, imprime mensagem padrão */
     static void localizarProdutos(){
-        //TO DO
+        cabecalho();
+        System.out.print("Digite a descrição (nome) do produto que deseja localizar: ");
+        String nomeBusca = teclado.nextLine();
+
+        // CORREÇÃO: Passando 1.0 no preço e 0.1 na margem para não estourar a sua validação da classe Produto
+        Produto produtoBusca = new ProdutoNaoPerecivel(nomeBusca, 1.0, 0.1);
+        boolean encontrou = false;
+
+        for (int i = 0; i < produtosCadastrados.length; i++) {
+            if (produtosCadastrados[i] != null && produtosCadastrados[i].equals(produtoBusca)) {
+                System.out.println("\nProduto Encontrado:");
+                System.out.println(produtosCadastrados[i].toString());
+                encontrou = true;
+                break;
+            }
+        }
+
+        if (!encontrou) {
+            System.out.println("\nProduto não encontrado.");
+        }
     }
+
+    //#region Cadastrar Prduto
 
     /**
      * Rotina de cadastro de um novo produto: pergunta ao usuário o tipo do produto, lê os dados correspondentes,
@@ -86,15 +127,85 @@ public class Comercio {
      * Uma sugestão de melhoria mais significativa poderia ser o uso de padrão Factory Method para criação dos objetos.
      */
     static void cadastrarProduto(){
-        //TO DO
+        cabecalho();
+        System.out.println("CADASTRAR NOVO PRODUTO\n");
+
+        if (quantosProdutos >= produtosCadastrados.length) {
+            System.out.println("Capacidade máxima atingida. Não é possível cadastrar mais produtos.");
+            return;
+        }
+
+        try {
+            int tipo = lerTipoProduto();
+            if (tipo != 1 && tipo != 2) {
+                System.out.println("Tipo inválido. Operação cancelada.");
+                return;
+            }
+
+            String descricao = lerDescricao();
+            double precoCusto = lerValor("Preço de custo (ex: 10.50): ");
+            double margemLucro = lerValor("Margem de lucro (ex: 0.25 para 25%): ");
+
+            Produto novoProduto;
+            if (tipo == 1) {
+                novoProduto = new ProdutoNaoPerecivel(descricao, precoCusto, margemLucro);
+            } else {
+                LocalDate validade = lerDataValidade();
+                novoProduto = new ProdutoPerecivel(descricao, precoCusto, margemLucro, validade);
+            }
+
+            produtosCadastrados[quantosProdutos] = novoProduto;
+            quantosProdutos++;
+            System.out.println("\nProduto cadastrado com sucesso!");
+
+        } catch (IllegalArgumentException | java.time.format.DateTimeParseException e) {
+            System.out.println("\nErro de validação: Verifique os dados inseridos e tente novamente.");
+            System.out.println("Detalhe: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("\nErro inesperado no cadastro.");
+        }
     }
 
-    /**
+    private static int lerTipoProduto() {
+        System.out.print("Qual o tipo do produto? (1 - Não Perecível, 2 - Perecível): ");
+        return Integer.parseInt(teclado.nextLine());
+    }
+
+    private static String lerDescricao() {
+        System.out.print("Descrição do produto: ");
+        return teclado.nextLine();
+    }
+
+    private static double lerValor(String mensagem) {
+        System.out.print(mensagem);
+        return Double.parseDouble(teclado.nextLine().replace(",", "."));
+    }
+
+    private static LocalDate lerDataValidade() {
+        System.out.print("Data de validade (dd/mm/aaaa): ");
+        return LocalDate.parse(teclado.nextLine(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    //#endregion
+
+   /**
      * Salva os dados dos produtos cadastrados no arquivo csv informado. Sobrescreve todo o conteúdo do arquivo.
      * @param nomeArquivo Nome do arquivo a ser gravado.
      */
     public static void salvarProdutos(String nomeArquivo){
-        //TO DO  
+        try (FileWriter escritor = new FileWriter(nomeArquivo, Charset.forName("ISO-8859-2"))) {
+            
+            escritor.write(quantosProdutos + "\n");
+            
+            for (int i = 0; i < quantosProdutos; i++) {
+                if (produtosCadastrados[i] != null) {
+                    escritor.write(produtosCadastrados[i].gerarDadosTexto() + "\n");
+                }
+            }
+            
+        } catch (IOException e) {
+            System.out.println("Erro Crítico: Não foi possível salvar os dados no arquivo: " + e.getMessage());
+        }  
     }
 
     public static void main(String[] args) throws Exception {

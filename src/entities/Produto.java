@@ -37,6 +37,7 @@ public abstract class Produto {
 	protected Produto(String desc, double precoCusto, double margemLucro) {
 		init(desc, precoCusto, margemLucro);
 	}
+    
 	
 	/**
      * Construtor sem margem de lucro - fica considerado o valor padrão de margem de lucro.
@@ -50,21 +51,31 @@ public abstract class Produto {
 	}
 	
 
-	public static Produto criarDoTexto(String linha) {
+	/**
+     * Cria um produto a partir de uma linha de dados em formato texto.
+     * @param linha Linha com os dados do produto a ser criado.
+     * @return Um produto com os dados recebidos
+     */
+    public static Produto criarDoTexto(String linha) { // [cite: 48]
         String[] partes = linha.split(";");
-        int tipo = Integer.parseInt(partes[0]);
-        String desc = partes[1];
-        double preco = Double.parseDouble(partes[2]);
-        double margem = Double.parseDouble(partes[3]);
-        
-        if (tipo == 1) {
-            return new ProdutoNaoPerecivel(desc, preco, margem);
-        } else if (tipo == 2) {
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            LocalDate validade = LocalDate.parse(partes[4], fmt);
-            return new ProdutoPerecivel(desc, preco, margem, validade);
+        if (partes.length < 4) {
+            throw new IllegalArgumentException("Formato de linha de dados inválido.");
         }
-        return null;
+
+        int tipo = Integer.parseInt(partes[0].trim());
+        String desc = partes[1].trim();
+        double custo = Double.parseDouble(partes[2].trim().replace(",", "."));
+        double margem = Double.parseDouble(partes[3].trim().replace(",", "."));
+
+        if (tipo == 1) { 
+            return new ProdutoNaoPerecivel(desc, custo, margem);
+        } else if (tipo == 2) {
+            if (partes.length < 5) throw new IllegalArgumentException("Data de validade ausente no produto perecível.");
+            LocalDate validade = LocalDate.parse(partes[4].trim(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            return new ProdutoPerecivel(desc, custo, margem, validade);
+        } else {
+            throw new IllegalArgumentException("Tipo de produto não reconhecido (deve ser 1 ou 2).");
+        }
     }
 
 	/**
@@ -87,9 +98,7 @@ public abstract class Produto {
      * Retorna o valor de venda do produto, considerando seu preço de custo e margem de lucro.
      * @return Valor de venda do produto (double, positivo)
      */
-	public double valorDeVenda() {
-		return (precoCusto * (1.0 + margemLucro));
-	}
+	public abstract double valorDeVenda();
 	
 	/**
      * Retorna a representação textual do produto formatada para exibição.

@@ -1,6 +1,7 @@
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 
 public class ProdutoPerecivel extends Produto {
 
@@ -13,6 +14,11 @@ public class ProdutoPerecivel extends Produto {
         if(validade.isBefore(LocalDate.now())){
             throw new IllegalArgumentException("O produto está vencido");
         }
+        this.dataDeValidade = validade;
+    }
+
+    protected ProdutoPerecivel(String desc, double precoCusto, double margemLucro, LocalDate validade, boolean leituraDeArquivo){
+        super(desc, precoCusto, margemLucro);
         this.dataDeValidade = validade;
     }
     
@@ -31,14 +37,13 @@ public class ProdutoPerecivel extends Produto {
     @Override
     public String gerarDadosTexto() {
         DateTimeFormatter frm = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        return String.format(java.util.Locale.US, "2;%s;%.2f;%.2f;%s", this.descricao, this.precoCusto, this.margemLucro, frm.format(this.dataDeValidade));
+        return String.format(Locale.US, "2;%s;%.2f;%.2f;%s", this.descricao, this.precoCusto, this.margemLucro, frm.format(this.dataDeValidade));
     }
     
     @Override
     public String toString() {
-       DateTimeFormatter frm = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-       String dados = super.toString();
-       dados += "\nValidade até " + frm.format(this.dataDeValidade);
-       return dados;
+        DateTimeFormatter formatadorData = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String valorFormatado = String.format(Locale.of("pt", "BR"), "%.2f", valorDeVenda());
+        return "NOME: " + this.descricao + " - Valor de Venda: R$ " + valorFormatado + " (Validade: " + dataDeValidade.format(formatadorData) + ")";
     }
 }
