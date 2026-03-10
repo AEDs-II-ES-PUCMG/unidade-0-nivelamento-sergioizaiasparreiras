@@ -37,7 +37,7 @@ public abstract class Produto {
 	protected Produto(String desc, double precoCusto, double margemLucro) {
 		init(desc, precoCusto, margemLucro);
 	}
-    
+
 	
 	/**
      * Construtor sem margem de lucro - fica considerado o valor padrão de margem de lucro.
